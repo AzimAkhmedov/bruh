@@ -1,0 +1,13 @@
+.header {
+  width: 100%;
+  background: rgb(37, 44, 44);
+  padding: 10px 20px;
+
+  ul {
+    display: flex;
+    max-width: 1280px;
+    margin: 0 auto;
+    justify-content: space-between;
+    list-style: none;
+  }
+}
