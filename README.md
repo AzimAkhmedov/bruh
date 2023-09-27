@@ -1,1 +1,1 @@
-# bruh
+# https://t.me/azimiza
