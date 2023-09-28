@@ -1,3 +1,4 @@
+import axios from "axios";
 import s from "./UserForm.module.scss";
 import {
   Box,
@@ -14,29 +15,95 @@ import {
   FormGroup,
   InputAdornment,
 } from "@mui/material";
-import { useState } from "react";
+import { useFormik } from "formik";
+import { useEffect, useState } from "react";
 import { Rating } from "react-simple-star-rating";
 
 const UserForm = () => {
   const [rating, setRating] = useState(0);
   const [codePhraseMode, setCodePhraseMode] = useState<boolean>(false);
+  const [sufix, setSufix] = useState<string>("V");
+  const [prefix, setPrefix] = useState("Mrs.");
+  const [subscribed, setSubscribed] = useState("false");
+  const [disabled, setDisabled] = useState(true);
+  const formik = useFormik({
+    initialValues: {
+      firstName: "",
+      lastName: "",
+      jobTitle: "",
+      jobArea: "",
+      age: 0,
+      keyword: "None",
+      address: "",
+      city: "",
+      state: "",
+      county: "",
+    },
+    onSubmit: (val) => {
+      console.log({ ...val, prefix, sufix, subscribed });
+      axios
+        .post("http://localhost:8080/users", {
+          ...val,
+          prefix,
+          sufix,
+          subscribed,
+        })
+        .then((res) => {
+          if (res.statusText === "Created") {
+            alert("Успешно создано");
+          }
+        });
+    },
+    validate: ({
+      address,
+      city,
+      county,
+      firstName,
+      jobArea,
+      jobTitle,
+      keyword,
+      lastName,
+      state,
+    }) => {
+      if (
+        !address ||
+        !city ||
+        !county ||
+        !firstName ||
+        !jobArea ||
+        !lastName ||
+        !state ||
+        !jobTitle
+      ) {
+        setDisabled(true);
+      } else if (codePhraseMode && keyword === "None") {
+        setDisabled(true);
+      } else {
+        setDisabled(false);
+      }
+    },
+  });
 
   const handleRating = (rate: number) => {
     setRating(rate);
   };
-  const onPointerEnter = () => console.log("Enter");
-  const onPointerLeave = () => console.log("Leave");
-  const onPointerMove = (value: number, index: number) =>
-    console.log(value, index);
+  useEffect(() => {
+    formik.validateForm(formik.values);
+  }, [formik.values, codePhraseMode]);
 
   return (
     <div className="container">
-      <form className={s.form}>
+      <form onSubmit={formik.handleSubmit} className={s.form}>
         <Box className={s.header}>
           <Typography className={s.history} variant="body1">
             Список Профилей / <span className={s.profile_link}>Профиль</span>
           </Typography>
-          <Button disabled variant="contained" color="primary">
+          <Button
+            type="submit"
+            disabled={disabled}
+            variant="contained"
+            color="primary"
+          >
             СОХРАНИТЬ
           </Button>
         </Box>
@@ -44,34 +111,43 @@ const UserForm = () => {
           <div className={s.sidepfp}>
             <Input type="file" disableUnderline className={s.pfp} />
             <div className={s.rating}>
-              <Rating
-                onClick={handleRating}
-                onPointerEnter={onPointerEnter}
-                onPointerLeave={onPointerLeave}
-                onPointerMove={onPointerMove}
-                size={30}
-              />
+              <Rating onClick={handleRating} size={30} />
             </div>
-          </div>
+          </div>  
           <div className={s.profile_credentials}>
             <Typography className={s.title} variant="h5">
               Профиль <div className={s.line}></div>
             </Typography>
             <FormControl fullWidth>
               <InputLabel id="simple-select">Пол</InputLabel>
-              <Select labelId="simple-select" label="Пол">
-                <MenuItem value={"Male"}>Мужчина</MenuItem>
-                <MenuItem value={"Female"}>Женщина</MenuItem>
-                <MenuItem value={"Other"}>Другое</MenuItem>
-                <MenuItem value={"Mechanik"}>Линолиум</MenuItem>
+              <Select
+                onChange={(e) => {
+                  setPrefix(e.target.value);
+                }}
+                id="prefix"
+                labelId="simple-select"
+                label="Пол"
+                defaultValue={"Mrs."}
+              >
+                <MenuItem value={"Mrs."}>Мужчина</MenuItem>
+                <MenuItem value={"Ms."}>Женщина</MenuItem>
+                <MenuItem value={" "}>Другое</MenuItem>
               </Select>
             </FormControl>
             <FormControl fullWidth>
               <InputLabel id="simple-select-list">Списки</InputLabel>
-              <Select labelId="simple-select-list" label="Списки">
-                <MenuItem value={"Male"}>Первый Список</MenuItem>
-                <MenuItem value={"Female"}>Второй Список</MenuItem>
-                <MenuItem value={"Other"}>Третий Список</MenuItem>
+              <Select
+                onChange={(e) => {
+                  setSufix(e.target.value);
+                }}
+                id="sufix"
+                labelId="simple-select-list"
+                label="Списки"
+                defaultValue={"V"}
+              >
+                <MenuItem value={"V"}>V</MenuItem>
+                <MenuItem value={"B"}>B</MenuItem>
+                <MenuItem value={"A"}>A</MenuItem>
               </Select>
             </FormControl>
             <Box
@@ -89,11 +165,13 @@ const UserForm = () => {
                   {!codePhraseMode ? "Включите кодовую фразу" : "Кодовая фраза"}
                 </InputLabel>
                 <Input
+                  onChange={formik.handleChange}
                   placeholder={
                     !codePhraseMode
                       ? "Включите кодовую фразу"
                       : "Taka Utilisation SAS Com Walks"
                   }
+                  id="keyword"
                   disabled={!codePhraseMode}
                   disableUnderline
                   sx={{
@@ -122,32 +200,51 @@ const UserForm = () => {
             Общая Информация <div className={s.line}></div>
           </Typography>
           <FormControl fullWidth>
-            <TextField label="Имя" variant="outlined" />
+            <TextField
+              onChange={formik.handleChange}
+              id="firstName"
+              label="Имя"
+              variant="outlined"
+            />
           </FormControl>
           <FormControl fullWidth>
-            <TextField label="Фамилия" variant="outlined" />
+            <TextField
+              onChange={formik.handleChange}
+              id="lastName"
+              label="Фамилия"
+              variant="outlined"
+            />
           </FormControl>
           <FormControl fullWidth>
-            <TextField label="Возраст" type="number" variant="outlined" />
+            <TextField
+              onChange={formik.handleChange}
+              id="age"
+              label="Возраст"
+              type="number"
+              variant="outlined"
+            />
           </FormControl>
           <FormControl fullWidth>
             <TextField
               variant="filled"
               select
+              onChange={(e) => {
+                setSubscribed(e.target.value);
+              }}
               SelectProps={{
                 sx: { textAlign: "center" },
                 disableUnderline: true,
+                id: "subscribed",
+                defaultValue: "false",
                 startAdornment: (
                   <InputAdornment position="start">Подписка</InputAdornment>
                 ),
               }}
             >
-              <MenuItem value={"Бесплатно"}>Бесплатно</MenuItem>
-              <MenuItem value={"Премиум"}>Премиум</MenuItem>
-              <MenuItem value={"Подписка на уведомления"}>
-                Подписка на уведомления
-              </MenuItem>
-              <MenuItem value={"Spotify Premium"}>Spotify Premium</MenuItem>
+              <MenuItem value={"false"}>Бесплатно</MenuItem>
+              <MenuItem value={"true"}>Премиум</MenuItem>
+              <MenuItem value={"true"}>Подписка на уведомления</MenuItem>
+              <MenuItem value={"true"}>Spotify Premium</MenuItem>
             </TextField>
           </FormControl>
         </div>
@@ -157,10 +254,20 @@ const UserForm = () => {
               Работа <div className={s.line}></div>
             </Typography>
             <FormControl fullWidth>
-              <TextField label="Должность" variant="outlined" />
+              <TextField
+                onChange={formik.handleChange}
+                label="Должность"
+                variant="outlined"
+                id="jobTitle"
+              />
             </FormControl>
             <FormControl fullWidth>
-              <TextField label="Место Работы" variant="outlined" />
+              <TextField
+                onChange={formik.handleChange}
+                id="jobArea"
+                label="Место Работы"
+                variant="outlined"
+              />
             </FormControl>
           </div>
           <div className={s.home}>
@@ -168,16 +275,36 @@ const UserForm = () => {
               Домашний Адрес <div className={s.line}></div>
             </Typography>
             <FormControl fullWidth>
-              <TextField label="Страна" variant="outlined" />
-            </FormControl>{" "}
+              <TextField
+                onChange={formik.handleChange}
+                id="county"
+                label="Страна"
+                variant="outlined"
+              />
+            </FormControl>
             <FormControl fullWidth>
-              <TextField label="Город" variant="outlined" />
-            </FormControl>{" "}
+              <TextField
+                onChange={formik.handleChange}
+                id="city"
+                label="Город"
+                variant="outlined"
+              />
+            </FormControl>
             <FormControl fullWidth>
-              <TextField label="Область" variant="outlined" />
-            </FormControl>{" "}
+              <TextField
+                onChange={formik.handleChange}
+                id="state"
+                label="Область"
+                variant="outlined"
+              />
+            </FormControl>
             <FormControl fullWidth>
-              <TextField label="Адрес" variant="outlined" />
+              <TextField
+                onChange={formik.handleChange}
+                id="address"
+                label="Адрес"
+                variant="outlined"
+              />
             </FormControl>
           </div>
         </div>
